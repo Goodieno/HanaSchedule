@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hana's School Timer</title>
+<title>한나's Scheduler</title>
 
 <style>
 /* ================= ANIMATIONS ================= */
@@ -19,23 +19,6 @@
   to { transform: translateY(110vh) rotate(360deg); }
 }
 
-/* Pulsing Clock Animation */
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.03); }
-  100% { transform: scale(1); }
-}
-
-#clockBox { 
-  margin: auto; 
-  width: 320px; 
-  height: 320px; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center;
-  animation: pulse 2s ease-in-out infinite; /* Added the pulse here */
-}
-
 /* ================= THEME & LAYOUT ================= */
 body {
   background: #fffafa;
@@ -47,6 +30,7 @@ body {
   overflow-x: hidden;
 }
 h2 { margin: 10px 0; cursor: pointer; color: #ffb7c5; text-shadow: 1px 1px 2px rgba(0,0,0,0.05); }
+#clockBox { margin: auto; width: 320px; height: 320px; display: flex; align-items: center; justify-content: center; position: relative; }
 canvas { background: white; border-radius: 50%; box-shadow: 0 5px 15px rgba(255, 183, 197, 0.3); border: 8px solid #ffe4e1; }
 
 #periodLabel { font-size: 22px; font-weight: bold; margin-top: 10px; }
@@ -193,7 +177,12 @@ function toMin(t){let[h,m]=t.split(":"); return h*60+parseInt(m);}
 
 function drawClock() {
     let now = new Date();
+    let ms = now.getMilliseconds();
     let mins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+    
+    // Smooth pulse factor for the ring thickness
+    let pulseFactor = Math.sin(Date.now() / 1000 * Math.PI) * 2; 
+
     ctx.clearRect(0, 0, 300, 300);
     ctx.beginPath(); ctx.arc(150, 150, 133, 0, Math.PI * 2); ctx.fillStyle = "white"; ctx.fill();
 
@@ -222,7 +211,9 @@ function drawClock() {
         let percent = Math.max(0, Math.min(1, remain / total));
         ctx.beginPath();
         ctx.arc(150, 150, 138, -Math.PI / 2, -Math.PI / 2 + (percent * 2 * Math.PI), false);
-        ctx.lineWidth = 12; ctx.strokeStyle = color; ctx.lineCap = "round"; ctx.stroke();
+        // Pulse only the width of the ring
+        ctx.lineWidth = 12 + pulseFactor; 
+        ctx.strokeStyle = color; ctx.lineCap = "round"; ctx.stroke();
     }
 
     let h = now.getHours(); let m = now.getMinutes().toString().padStart(2, "0");
@@ -243,8 +234,13 @@ function drawClock() {
             row.classList.toggle("currentClass", (mins >= toMin(start) && mins < toMin(end)));
         }
     });
+    
+    // Request next frame for smooth animation
+    requestAnimationFrame(drawClock);
 }
-setInterval(drawClock, 1000);
+
+// Switch to requestAnimationFrame for the pulse to be smooth
+requestAnimationFrame(drawClock);
 
 function startEmojiRain() {
   setInterval(() => {
