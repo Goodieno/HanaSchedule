@@ -177,7 +177,6 @@ function toMin(t){let[h,m]=t.split(":"); return h*60+parseInt(m);}
 
 function drawClock() {
     let now = new Date();
-    let ms = now.getMilliseconds();
     let mins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
     
     // Smooth pulse factor for the ring thickness
@@ -211,16 +210,17 @@ function drawClock() {
         let percent = Math.max(0, Math.min(1, remain / total));
         ctx.beginPath();
         ctx.arc(150, 150, 138, -Math.PI / 2, -Math.PI / 2 + (percent * 2 * Math.PI), false);
-        // Pulse only the width of the ring
         ctx.lineWidth = 12 + pulseFactor; 
         ctx.strokeStyle = color; ctx.lineCap = "round"; ctx.stroke();
     }
 
-    let h = now.getHours(); let m = now.getMinutes().toString().padStart(2, "0");
+    let h = now.getHours(); 
+    let m = now.getMinutes().toString().padStart(2, "0");
+    let s = now.getSeconds().toString().padStart(2, "0");
     let ampm = h >= 12 ? "오후" : "오전"; h = h % 12 || 12;
     
     ctx.fillStyle = "#5d4037"; ctx.font = "bold 36px Arial"; ctx.textAlign = "center";
-    ctx.fillText(`${h}:${m}`, 150, 150);
+    ctx.fillText(`${h}:${m}:${s}`, 150, 150);
     
     ctx.font = "16px Arial"; ctx.fillStyle = "#f06292";
     ctx.fillText(ampm, 150, 175);
@@ -235,11 +235,9 @@ function drawClock() {
         }
     });
     
-    // Request next frame for smooth animation
     requestAnimationFrame(drawClock);
 }
 
-// Switch to requestAnimationFrame for the pulse to be smooth
 requestAnimationFrame(drawClock);
 
 function startEmojiRain() {
