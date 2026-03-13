@@ -41,7 +41,7 @@ table {
   background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.03);
 }
 th, td { padding: 12px; border-bottom: 1px solid #fff0f5; }
-th { color: white; background: #ffc0cb; font-weight: bold; }
+th { color: white; background: #ffc2d4; font-weight: bold; }
 
 .currentClass { background: #fff0f5 !important; border: 2px solid #ffb7c5; font-weight: bold; }
 
@@ -173,13 +173,12 @@ if (isWeekendView) {
 
 const canvas=document.getElementById("clock");
 const ctx=canvas.getContext("2d");
-function toMin(t){let[h,m]=t.split(":"); return h*60+parseInt(m);}
+function toMin(t){let[h,m]=t.split(":"); return parseInt(h)*60+parseInt(m);}
 
 function drawClock() {
     let now = new Date();
     let mins = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
     
-    // Smooth pulse factor for the ring thickness
     let pulseFactor = Math.sin(Date.now() / 1000 * Math.PI) * 2; 
 
     ctx.clearRect(0, 0, 300, 300);
@@ -195,15 +194,57 @@ function drawClock() {
 
     let label = "휴식 시간 🫧";
     let color = "#ce93d8";
-    let total = 60;
+    let total = 0;
     let remain = 0;
 
-    let active = blocks.find(b => mins >= toMin(b.start) && mins < toMin(b.end));
-    if (active) {
-        label = active.label;
-        color = active.type === "class" ? "#f06292" : (active.type === "prep" ? "#9575cd" : "#ff8a65");
-        total = toMin(active.end) - toMin(active.start);
-        remain = toMin(active.end) - mins;
+    if (!isWeekendView) {
+        let active = blocks.find(b => mins >= toMin(b.start) && mins < toMin(b.end));
+        if (active) {
+            label = active.label;
+            color = active.type === "class" ? "#f06292" : (active.type === "prep" ? "#9575cd" : "#ff8a65");
+            total = toMin(active.end) - toMin(active.start);
+            remain = toMin(active.end) - mins;
+        } else {
+            let nextBlock = blocks.find(b => mins < toMin(b.start));
+            if (nextBlock) {
+                label = "준비 시간 ✨"; color = "#ffb7c5";
+                let lastBlock = [...blocks].reverse().find(b => mins >= toMin(b.end));
+                let startOfGap = lastBlock ? toMin(lastBlock.end) : toMin("08:30");
+                total = toMin(nextBlock.start) - startOfGap;
+                remain = toMin(nextBlock.start) - mins;
+            }
+        }
+    } else {
+        // ================= VERIFIED WEEKEND COUNTDOWN =================
+        color = "#f48fb1";
+        
+        let target = new Date(now);
+        let daysUntilMonday = (1 + 7 - now.getDay()) % 7;
+        if (daysUntilMonday === 0 && now.getHours() >= 0) {
+            daysUntilMonday = 7; 
+        }
+        target.setDate(now.getDate() + daysUntilMonday);
+        target.setHours(0, 0, 0, 0); 
+        
+        let startOfWeekend = new Date(now);
+        let daysSinceFriday = (now.getDay() + 2) % 7; 
+        startOfWeekend.setDate(now.getDate() - daysSinceFriday);
+        startOfWeekend.setHours(16, 30, 0, 0);
+
+        let totalWeekendMs = target - startOfWeekend;
+        let remainingMs = target - now;
+
+        remain = Math.max(0, remainingMs / 60000);
+        total = totalWeekendMs / 60000;
+
+        let diffHrs = Math.floor(remainingMs / 3600000);
+        let diffMins = Math.floor((remainingMs % 3600000) / 60000);
+        
+        if (remainingMs > 0) {
+            label = `주말 남은 시간: ${diffHrs}시간 ${diffMins}분 🌸`;
+        } else {
+            label = "월요일 시작! 화이팅! ✨";
+        }
     }
 
     if (total > 0) {
@@ -251,10 +292,6 @@ function startEmojiRain() {
     if (mode === "OFF") return;
     let emojis = ['🌸', '🕊️', '🧸', '🤍', '✨']; 
     if (mode === "POO") emojis = ['💩', '😭'];
-    else {
-        if (currentCondition === "Rain") emojis = ['☔', '💧', '☁️', '🐸'];
-        else if (currentCondition === "Snow") emojis = ['❄️', '⛄', '🤍', '🌬️'];
-    }
     const e = document.createElement('div'); e.className = 'falling-emoji';
     e.textContent = emojis[Math.floor(Math.random() * emojis.length)];
     e.style.left = Math.random() * 100 + 'vw'; e.style.animationDuration = (Math.random() * 3 + 2) + 's';
